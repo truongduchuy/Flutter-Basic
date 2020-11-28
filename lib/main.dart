@@ -1,153 +1,136 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:math_expressions/math_expressions.dart';
+import './list_item.dart';
 
 void main() => runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Home(),
+      home: TodoList(),
     ));
 
-class Home extends StatelessWidget {
+class TodoList extends StatefulWidget {
+  TodoList({Key key}) : super(key: key);
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        // appBar: AppBar(
-        //     title: Text('Calculator'),
-        //     centerTitle: true,
-        //     backgroundColor: Colors.red[600]),
-        body: Calculator());
+  _TodoListState createState() => _TodoListState();
+}
+
+class _TodoListState extends State<TodoList> {
+  List list = ['1', '2', '3'];
+  var value;
+
+  deleteItem(item) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+              content: Text('Are you sure to delete?'),
+              actions: [
+                FlatButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text('Cancel')),
+                FlatButton(
+                    child: Text('Delete'),
+                    onPressed: () {
+                      setState(() {
+                        list.remove(item);
+                        Navigator.of(context).pop();
+                      });
+                    })
+              ]);
+        });
   }
-}
-
-class Calculator extends StatefulWidget {
-  Calculator({Key key}) : super(key: key);
-
-  @override
-  _CalculatorState createState() => _CalculatorState();
-}
-
-class _CalculatorState extends State<Calculator> {
-  var buttons;
-  String formula = '';
-  String result;
 
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
-    buttons = [
-      [
-        'C',
-        'Del',
-        '%',
-        '/',
-      ],
-      [
-        '7',
-        '8',
-        '9',
-        '*',
-      ],
-      [
-        '4',
-        '5',
-        '6',
-        '+',
-      ],
-      ['1', '2', '3', '-'],
-      ['0', '.', '=']
-    ];
   }
 
-  List<Widget> renderExpressionAndResult() {
-    List<Widget> list = [
-      Container(
-          padding: EdgeInsets.only(right: 20),
-          child: Text(formula,
-              style: TextStyle(color: Colors.black, fontSize: 40)))
-    ];
-
-    if (result != null) {
-      list.add(Container(
-          padding: EdgeInsets.only(right: 20),
-          child: Text(result,
-              style: TextStyle(color: Colors.black, fontSize: 70))));
-    }
-    return list;
-  }
-
-  handlePressButton(String chac) {
+  addItem() async {
+    var newValue = await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(builder: (context, setState) {
+            return AlertDialog(
+              content: Stack(
+                overflow: Overflow.visible,
+                children: <Widget>[
+                  Positioned(
+                    right: -40.0,
+                    top: -40.0,
+                    child: InkResponse(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: CircleAvatar(
+                        child: Icon(Icons.close),
+                        backgroundColor: Colors.red[600],
+                      ),
+                    ),
+                  ),
+                  Form(
+                    // key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: TextField(
+                            autofocus: true,
+                            onChanged: (newValue) {
+                              setState(() {
+                                value = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: RaisedButton(
+                              child: Text("Submit"),
+                              onPressed: value == null || value.isEmpty
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        Navigator.of(context).pop(value);
+                                      });
+                                    }),
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          });
+        });
     setState(() {
-      if (chac == 'C') {
-        formula = '';
-        result = null;
-      } else if (chac == 'Del') {
-        if(formula != null && formula.length > 0)
-          formula = formula.substring(0, formula.length - 1);
-      } else if (chac == '=') {
-        try {
-          Parser p = Parser();
-          Expression exp = p.parse(formula);
-          ContextModel cm = ContextModel();
-          result = '${exp.evaluate(EvaluationType.REAL, cm)}';
-        } catch (e) {}
-      } else
-        formula += chac;
+      list.add(newValue);
     });
-  }
-
-  Expanded generateButton(String character) {
-    return Expanded(
-        flex: character == '0' ? 2 : 1,
-        child: Container(
-          height: double.infinity,
-          padding: EdgeInsets.all(5.0),
-          child: RaisedButton(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            color:
-                ['C', 'Del', '%', '/', '*', '+', '-', '='].contains(character)
-                    ? character == '='
-                        ? Colors.orange[800]
-                        : Colors.orange[200]
-                    : Colors.grey[300],
-            onPressed: () {
-              handlePressButton(character);
-            },
-            child: Text(character, style: TextStyle(fontSize: 20)),
-          ),
-        ));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Expanded(
-          flex: 1,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: renderExpressionAndResult(),
-          ),
-        ),
-        // SizedBox(
-        //   height: 10,
-        // ),
-        Expanded(
-          flex: 2,
-          child: Column(
-              children: buttons
-                  .map<Widget>((row) => Expanded(
-                        child: Row(
-                          children: row
-                              .map<Widget>(
-                                (character) => generateButton(character),
-                              )
-                              .toList(),
-                        ),
-                      ))
-                  .toList()),
-        )
-      ]),
-    );
+    return Scaffold(
+        appBar: AppBar(
+            title: Text('To Do List'),
+            centerTitle: true,
+            backgroundColor: Colors.blue[600]),
+        body: Container(
+            padding: EdgeInsets.all(5),
+            child: ListView.builder(
+                itemCount: list.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return ListItem(deleteItem: deleteItem, item: list[index]);
+                })),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => addItem(),
+          label: Text('Add'),
+          icon: Icon(Icons.add),
+          backgroundColor: Colors.blue,
+        ));
   }
 }
+
